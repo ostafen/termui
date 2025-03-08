@@ -9,7 +9,7 @@ import (
 	"image"
 	"math"
 
-	. "github.com/gizak/termui/v3"
+	. "github.com/ostafen/termui/v3"
 )
 
 // Plot has two modes: line(default) and scatter.
