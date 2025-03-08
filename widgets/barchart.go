@@ -71,17 +71,21 @@ func (self *BarChart) Draw(buf *Buffer) {
 		}
 
 		// draw number
+
 		numberXCoordinate := barXCoordinate + int((float64(self.BarWidth) / 2))
 		if numberXCoordinate <= self.Inner.Max.X {
-			buf.SetString(
-				self.NumFormatter(data),
-				NewStyle(
-					SelectStyle(self.NumStyles, i+1).Fg,
-					SelectColor(self.BarColors, i),
-					SelectStyle(self.NumStyles, i+1).Modifier,
-				),
-				image.Pt(numberXCoordinate, self.Inner.Max.Y-2),
-			)
+			if data > 0 {
+				s := self.NumFormatter(data)
+				buf.SetString(
+					s,
+					NewStyle(
+						SelectStyle(self.NumStyles, i+1).Fg,
+						SelectColor(self.BarColors, i),
+						SelectStyle(self.NumStyles, i+1).Modifier,
+					),
+					image.Pt(numberXCoordinate-len(s)/2, self.Inner.Max.Y-2),
+				)
+			}
 		}
 
 		barXCoordinate += (self.BarWidth + self.BarGap)
