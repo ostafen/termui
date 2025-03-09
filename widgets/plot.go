@@ -30,7 +30,7 @@ type Plot struct {
 	Marker          PlotMarker
 	DotMarkerRune   rune
 	PlotType        PlotType
-	HorizontalScale int
+	HorizontalScale float64
 	DrawDirection   DrawDirection // TODO
 }
 
@@ -86,9 +86,10 @@ func (self *Plot) renderBraille(buf *Buffer, drawArea image.Rectangle, maxVal fl
 		for i, line := range self.Data {
 			for j, val := range line {
 				height := int((val / maxVal) * float64(drawArea.Dy()-1))
+				x := (float64(drawArea.Min.X) + (float64(j) * float64(self.HorizontalScale))) * 2
 				canvas.SetPoint(
 					image.Pt(
-						(drawArea.Min.X+(j*self.HorizontalScale))*2,
+						int(x),
 						(drawArea.Max.Y-height-1)*4,
 					),
 					SelectColor(self.LineColors, i),
@@ -102,13 +103,16 @@ func (self *Plot) renderBraille(buf *Buffer, drawArea image.Rectangle, maxVal fl
 			previousHeight := int(r.Scale(line[0]) * float64(drawArea.Dy()-1))
 			for j, val := range line[1:] {
 				height := int(r.Scale(val) * float64(drawArea.Dy()-1))
+				x0 := (float64(drawArea.Min.X) + (float64(j) * float64(self.HorizontalScale))) * 2
+				x1 := (float64(drawArea.Min.X) + (float64(j+1) * float64(self.HorizontalScale))) * 2
+
 				canvas.SetLine(
 					image.Pt(
-						(drawArea.Min.X+(j*self.HorizontalScale))*2,
+						int(x0),
 						(drawArea.Max.Y-previousHeight-1)*4,
 					),
 					image.Pt(
-						(drawArea.Min.X+((j+1)*self.HorizontalScale))*2,
+						int(x1),
 						(drawArea.Max.Y-height-1)*4,
 					),
 					SelectColor(self.LineColors, i),
@@ -127,7 +131,9 @@ func (self *Plot) renderDot(buf *Buffer, drawArea image.Rectangle, maxVal float6
 		for i, line := range self.Data {
 			for j, val := range line {
 				height := int((val / maxVal) * float64(drawArea.Dy()-1))
-				point := image.Pt(drawArea.Min.X+(j*self.HorizontalScale), drawArea.Max.Y-1-height)
+				x := float64(drawArea.Min.X) + (float64(j) * float64(self.HorizontalScale))
+
+				point := image.Pt(int(x), drawArea.Max.Y-1-height)
 				if point.In(drawArea) {
 					buf.SetCell(
 						NewCell(self.DotMarkerRune, NewStyle(SelectColor(self.LineColors, i))),
@@ -138,12 +144,13 @@ func (self *Plot) renderDot(buf *Buffer, drawArea image.Rectangle, maxVal float6
 		}
 	case LineChart:
 		for i, line := range self.Data {
-			for j := 0; j < len(line) && j*self.HorizontalScale < drawArea.Dx(); j++ {
+			for j := 0; j < len(line) && int(float64(j)*float64(self.HorizontalScale)) < drawArea.Dx(); j++ {
 				val := line[j]
 				height := int((val / maxVal) * float64(drawArea.Dy()-1))
+				x := float64(drawArea.Min.X) + (float64(j) * float64(self.HorizontalScale))
 				buf.SetCell(
 					NewCell(self.DotMarkerRune, NewStyle(SelectColor(self.LineColors, i))),
-					image.Pt(drawArea.Min.X+(j*self.HorizontalScale), drawArea.Max.Y-1-height),
+					image.Pt(int(x), drawArea.Max.Y-1-height),
 				)
 			}
 		}
@@ -180,10 +187,10 @@ func (self *Plot) plotAxes(buf *Buffer, maxVal float64) {
 
 	if len(self.DataLabels) == 0 {
 		// draw rest
-		for x := self.Inner.Min.X + yAxisLabelsWidth + (xAxisLabelsGap)*self.HorizontalScale + 1; x < self.Inner.Max.X-1; {
+		for x := self.Inner.Min.X + yAxisLabelsWidth + int(float64(xAxisLabelsGap)*self.HorizontalScale) + 1; x < self.Inner.Max.X-1; {
 			label := fmt.Sprintf(
 				"%d",
-				(x-(self.Inner.Min.X+yAxisLabelsWidth)-1)/(self.HorizontalScale)+1,
+				int((float64(x-(self.Inner.Min.X+yAxisLabelsWidth)-1))/(self.HorizontalScale)+1),
 			)
 
 			buf.SetString(
@@ -191,7 +198,7 @@ func (self *Plot) plotAxes(buf *Buffer, maxVal float64) {
 				NewStyle(ColorWhite),
 				image.Pt(x, self.Inner.Max.Y-1),
 			)
-			x += (len(label) + xAxisLabelsGap) * self.HorizontalScale
+			x += int(float64((len(label) + xAxisLabelsGap)) * self.HorizontalScale)
 		}
 	} else {
 		xAxisLabelsGap := ((self.Inner.Max.X - self.Inner.Min.X) - yAxisLabelsWidth) / (len(self.DataLabels) - 1)
